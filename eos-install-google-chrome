@@ -3,9 +3,12 @@
 # Downloads Google Chrome and unzips to the user's home directory,
 # with a desktop launcher
 
+TEMP_DIR=`mktemp -d`
+
 exit_with_error() {
-   echo $1
-   exit 1
+    echo $1
+    rm -rf ${TEMP_DIR}
+    exit 1
 }
 
 USERID=$(id -u)
@@ -20,7 +23,6 @@ case ${DEB_ARCH} in
        ;;
 esac
 
-TEMP_DIR=`mktemp -d`
 DEST_DIR=~/.local/share/eos-third-party-apps/google-chrome
 WGET_COMMAND="wget -c --tries=5"
 
@@ -131,8 +133,6 @@ install_packages() {
         exit_with_error "Cannot unpack package file ${GCONF_FILENAME}"
     fi
 
-    rm -rf ${TEMP_DIR}
-
     echo "Symlinking the bundled libgconf-2 shared opbject"
     for gconf_so_file in ${DEST_DIR}/usr/lib/x86_64-linux-gnu/libgconf-2*so*; do
         filename="$(basename ${gconf_so_file})"
@@ -144,11 +144,13 @@ install_packages() {
     sed -i "s|/usr/bin/google-chrome-stable|${DEST_DIR}/opt/google/chrome/google-chrome|g" ~/.local/share/applications/google-chrome.desktop
     sed -i "s|Icon=google-chrome|Icon=${DEST_DIR}/opt/google/chrome/product_logo_64.png|g" ~/.local/share/applications/google-chrome.desktop
     update-desktop-database ~/.local/share/applications
+    eos-add-to-desktop google-chrome
 }
 
 retrieve_packages_metadata
 download_packages
 install_packages
 
-eos-add-to-desktop google-chrome
+rm -rf ${TEMP_DIR}
+
 exit 0
