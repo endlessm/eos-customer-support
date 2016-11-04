@@ -24,6 +24,7 @@ case ${DEB_ARCH} in
 esac
 
 DEST_DIR=~/.local/share/eos-third-party-apps/google-chrome
+DESKTOP_DIR=~/.local/share/applications
 WGET_COMMAND="wget -c --tries=5"
 
 CHROME_URL=http://dl.google.com/linux/chrome/deb
@@ -131,6 +132,8 @@ install_packages() {
     echo "Removing old version if installed"
     rm -rf ${DEST_DIR}
 
+    mkdir -p ${DEST_DIR}
+
     echo "Installing ${TEMP_DIR}/${CHROME_FILENAME}"
     if ! dpkg -x ${TEMP_DIR}/${CHROME_FILENAME} ${DEST_DIR} ; then
         exit_with_error "Cannot unpack package file ${CHROME_FILENAME}"
@@ -148,11 +151,12 @@ install_packages() {
     done
 
     echo "Adding to desktop"
-    cp ${DEST_DIR}/usr/share/applications/google-chrome.desktop ~/.local/share/applications/
+    mkdir -p ${DESKTOP_DIR}
+    cp ${DEST_DIR}/usr/share/applications/google-chrome.desktop ${DESKTOP_DIR}
     cp ${TEMP_DIR}/${ICON_FILENAME} ${DEST_DIR}
-    sed -i "s|/usr/bin/google-chrome-stable|${DEST_DIR}/opt/google/chrome/google-chrome|g" ~/.local/share/applications/google-chrome.desktop
+    sed -i "s|/usr/bin/google-chrome-stable|${DEST_DIR}/opt/google/chrome/google-chrome|g" ${DESKTOP_DIR}/google-chrome.desktop
     sed -i "s|Icon=google-chrome|Icon=${DEST_DIR}/${ICON_FILENAME}|g" ~/.local/share/applications/google-chrome.desktop
-    update-desktop-database ~/.local/share/applications
+    update-desktop-database ${DESKTOP_DIR}
     eos-add-to-desktop google-chrome
 }
 
