@@ -42,6 +42,9 @@ GCONF_SHA1SUM=
 GCONF_URL_FILENAME=
 GCONF_FILENAME=
 
+ICON_FILENAME=google-chrome.png
+ICON_URL_FILENAME=https://raw.githubusercontent.com/endlessm/eos-customer-support/master/data/${ICON_FILENAME}
+
 get_field() {
     grep-dctrl -n -s $1 -P $2 ${TEMP_DIR}/Packages
 }
@@ -117,6 +120,11 @@ download_packages() {
     {
         exit_with_error "sha1sum mismatch ${TEMP_DIR}/${GCONF_FILENAME}"
     }
+
+    echo "Downloading icon"
+    if ! ${WGET_COMMAND} "${ICON_URL_FILENAME}" -O "${TEMP_DIR}/${ICON_FILENAME}"; then
+	exit_with_error "Failed to download ${ICON_URL_FILENAME}"
+    fi
 }
 
 install_packages() {
@@ -141,8 +149,9 @@ install_packages() {
 
     echo "Adding to desktop"
     cp ${DEST_DIR}/usr/share/applications/google-chrome.desktop ~/.local/share/applications/
+    cp ${TEMP_DIR}/${ICON_FILENAME} ${DEST_DIR}
     sed -i "s|/usr/bin/google-chrome-stable|${DEST_DIR}/opt/google/chrome/google-chrome|g" ~/.local/share/applications/google-chrome.desktop
-    sed -i "s|Icon=google-chrome|Icon=${DEST_DIR}/opt/google/chrome/product_logo_64.png|g" ~/.local/share/applications/google-chrome.desktop
+    sed -i "s|Icon=google-chrome|Icon=${DEST_DIR}/${ICON_FILENAME}|g" ~/.local/share/applications/google-chrome.desktop
     update-desktop-database ~/.local/share/applications
     eos-add-to-desktop google-chrome
 }
