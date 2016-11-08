@@ -144,7 +144,7 @@ install_packages() {
         exit_with_error "Cannot unpack package file ${GCONF_FILENAME}"
     fi
 
-    echo "Symlinking the bundled libgconf-2 shared opbject"
+    echo "Symlinking the bundled libgconf-2 shared object"
     for gconf_so_file in ${DEST_DIR}/usr/lib/x86_64-linux-gnu/libgconf-2*so*; do
         filename="$(basename ${gconf_so_file})"
         ln -s ../../../usr/lib/x86_64-linux-gnu/${filename} ${DEST_DIR}/opt/google/chrome/${filename}
