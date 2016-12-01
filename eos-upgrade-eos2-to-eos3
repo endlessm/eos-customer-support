@@ -79,6 +79,11 @@ if ! $FORCE; then
     echo
     echo "The legacy application format is no longer supported, and the first step"
     echo "of the upgrade process is to remove all installed application bundles."
+    echo "Also, all the ongoing and pending printers jobs will be cancelled and"
+    echo "any locally configured printer, as well as any driver that would have been"
+    echo "downloaded from the internet, will be uninstalled to make sure you start"
+    echo "clean after the upgrade, when you will need to reinstall your printers."
+    echo
     echo "Then, roughly a gigabyte of data will be downloaded from the internet,"
     echo "which may take a long time and incur data charges depending on your"
     echo "internet connection and contract with your provider."
@@ -149,6 +154,75 @@ done
 # from 32-bit to 64-bit upon reboot (but leave the actual plugins
 # intact for continued use while the upgrade is downloading)
 rm -f /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/VERSION.txt
+
+# Remove all the installed printers to force users reconfigure them
+# against the 64bit drivers that available in the updated system.
+#
+# Note that we need to stop CUPS before removing anything, so that
+# we can get a complete list of printers regardless of their status
+# as well as to ensure that the configuration files handled by CUPS
+# e.g. /etc/cups/printers.conf) are correctly updated on restart.
+systemctl stop cups 2> /dev/null
+printers=$(lpstat -p 2> /dev/null | grep ^printer | cut -d ' ' -f 2)
+if [ -n "$printers" ]; then
+    echo "Cancelling all pending printing jobs..."
+    cancel -a -x
+
+    for printer in $printers; do
+        echo "Uninstalling printer '$printer'..."
+        lpadmin -x "$printer"
+    done
+else
+    echo "No printers found"
+fi
+systemctl start cups 2> /dev/null
+
+# Remove drivers downloaded from OpenPrinting, if any, along with
+# the symlinks created under /var/lib/eos-config-printer/ppd.
+ecp_ppd_dir="/var/lib/eos-config-printer/ppd"
+if [ -d $ecp_ppd_dir ] && [ -n "$(ls $ecp_ppd_dir 2> /dev/null)" ]; then
+    for driver_symlink in $ecp_ppd_dir/*; do
+        if [ ! -h $driver_symlink ]; then
+            echo "$driver_symlink is not a symbolic link"
+            break
+        fi
+
+        target=$(readlink $driver_symlink)
+        if [ -z $target ]; then
+            echo "Could not read target for symbolic link $driver_symlink"
+            break
+        fi
+
+        if [ ! -e $target ] || [[ $target != "/opt/"* ]]; then
+            echo "Symbolic link $driver_symlink points to invalid target"
+            unlink $driver_symlink
+            break
+        fi
+
+        # Found the PPD directory inside the driver's directory, now search
+        # for the driver's top directory so that we can remove everything.
+        driver_topdir=$target
+        current_dir=$(dirname $target)
+        while [ $current_dir != "/opt" ]; do
+            driver_topdir=$current_dir
+            current_dir=$(dirname $current_dir)
+        done
+
+        # Sanity check to make sure we're recursively removing a
+        # a directory in /opt, not /opt itself (or anything else).
+        # For instance: /opt/epson-inkjet-printer-201207w
+        if [ -d $driver_topdir ] && [[ $driver_topdir == "/opt/"?* ]]; then
+            driver_name=$(basename $driver_topdir)
+            echo "Removing driver downloaded from OpenPrinting: $driver_name"
+            rm -rf $driver_topdir
+            unlink $driver_symlink
+        fi
+    done
+
+    # Restart CUPS after removing the drivers to make sure it
+    # picks up the changes and reflects them in the PPD database.
+    systemctl restart cups 2> /dev/null
+fi
 
 # Figure out the architecture / product
 machine=`uname -m`
