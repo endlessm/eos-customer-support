@@ -314,7 +314,10 @@ EOF
 
 if ! $SKIP; then
     # Perform the ostree upgrade
-    ostree admin upgrade
+    # Note that if there has not been an eos3 release since
+    # the latest eos2 release, this chronologically will appear
+    # to ostree as a "downgrade", so we should explicitly allow it
+    ostree admin upgrade --allow-downgrade
 
     # All done
     echo "Upgrade complete! Please reboot the computer to start using Endless OS 3"
