@@ -150,10 +150,6 @@ done
 # intact for continued use while the upgrade is downloading)
 rm -f /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/VERSION.txt
 
-# TODO For split disk images, create the flatpak directory
-# on the secondary storage
-# mkdir /var/endless-extra/flatpak || true
-
 # Figure out the architecture / product
 machine=`uname -m`
 case "$machine" in
@@ -172,7 +168,6 @@ case "$machine" in
 esac
 
 # Set up the ostree and flatpak repo config
-# TODO Adapt to support split disk images
 cat <<EOF > /ostree/repo/config
 [core]
 repo_version=1
@@ -198,6 +193,36 @@ gpg-verify=false
 gpg-verify-summary=false
 url=file:///var/lib/flatpak-external-apps
 EOF
+
+if [[ $(blkid -t LABEL=extra) ]]; then
+    # Split disk image
+    # Create the flatpak directory and repo on the secondary storage
+    mkdir -p /var/endless-extra/flatpak
+    ostree init --mode=bare-user --repo /var/endless-extra/flatpak/repo
+    # Overwrite the config file
+    # This is identical to the main ostree config, except the mode
+    # is "bare-user", and there is no specification of the "eos" remote
+    cat <<EOF > /var/endless-extra/flatpak/repo/config
+[core]
+repo_version=1
+mode=bare-user
+
+[remote "eos-runtimes"]
+gpg-verify=true
+gpg-verify-summary=true
+url=https://ostree.endlessm.com/ostree/eos-$arch
+
+[remote "eos-apps"]
+gpg-verify=true
+gpg-verify-summary=true
+url=https://ostree.endlessm.com/ostree/eos-apps
+
+[remote "eos-external-apps"]
+gpg-verify=false
+gpg-verify-summary=false
+url=file:///var/lib/flatpak-external-apps
+EOF
+fi
 
 # Set the default branch for the flatpak repo
 mkdir -p /etc/gnome-software
