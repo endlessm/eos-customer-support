@@ -18,9 +18,9 @@ Remove all legacy apps and upgrade from eos2 to eos3
 Usage:
    $0
 Options:
-   -f,--force	don't ask for confirmation
+   -f,--force   don't ask for confirmation
    -s,--skip    skip the final step to actually perform the ostree upgrade
-   -h,--help	show this message
+   -h,--help    show this message
 EOF
 }
 
@@ -60,11 +60,11 @@ major_version=`echo ${version} | awk -F '.' '{print $1}'`
 if [ ${version} != ${LATEST_VERSION} ]; then
     echo "This script only works with Endless OS version ${LATEST_VERSION}"
     if [ ${major_version} == 2 ]; then
-	echo "Please update the OS and try again"
+        echo "Please update the OS and try again"
     elif [ ${major_version} == 3 ]; then
-	echo "You already are running Endless OS version 3"
+        echo "You already are running Endless OS version 3"
     else
-	echo "You are running an unsupported version: ${version}"
+        echo "You are running an unsupported version: ${version}"
     fi
     exit 1
 fi
@@ -228,17 +228,17 @@ fi
 machine=`uname -m`
 case "$machine" in
     armv7l)
-	arch=armhf
-	prod=ec100
-	;;
+        arch=armhf
+        prod=ec100
+        ;;
     x86_64)
-	arch=amd64
-	prod=amd64
-	;;
+        arch=amd64
+        prod=amd64
+        ;;
     *)
         echo Unexpected machine architecture $machine
         exit 1
-	;;
+        ;;
 esac
 
 # Set up the ostree and flatpak repo config
