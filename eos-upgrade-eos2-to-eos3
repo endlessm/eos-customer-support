@@ -34,7 +34,7 @@ while true; do
             ;;
         -s|--skip)
             SKIP=true
-            exit 0
+            shift
             ;;
         -h|--help)
             usage
@@ -106,8 +106,9 @@ if ! $FORCE; then
     fi
 fi
 
-# Stop any updates in progress
-killall ostree-daemon || true
+# Stop any updates in progress, and prevent the timer from restarting them
+systemctl stop eos-autoupdater.timer || true
+systemctl stop eos-autoupdater.service || true
 killall eos-updater || true
 
 # For older installs (eos2.3.x and earlier), we had a separate boot
@@ -115,7 +116,7 @@ killall eos-updater || true
 if [ ! "$(ls -A /sysroot/boot)" ]; then
     echo "Migrating separate boot partition into main partition"
     # Get the boot partition (e.g., /dev/sda1 or /dev/mmcblk0p1)
-    boot_part=`mount | grep /boot | awk '{print $1}'`
+    boot_part=`findmnt -T /boot -o SOURCE -n`
     # Extract the device name (e.g., /dev/sda or /dev/mmblk0)
     boot_dev=`echo $boot_part | sed 's/p*[0-9]\+$//'`
     # Copy the contents from /boot to the main partition
@@ -145,10 +146,7 @@ rm -rf /var/endless || true
 rm -rf /var/endless-extra/* || true
 
 # Remove any existing subscriptions app data for all users
-for user in `ls /home`
-do
-    rm -rf /home/$user/.local/share/com.endlessm.subscriptions || true
-done
+rm -rf /home/*/.local/share/com.endlessm.subscriptions
 
 # Remove the Flash/Widevine plugin version file to force an update
 # from 32-bit to 64-bit upon reboot (but leave the actual plugins
@@ -268,7 +266,7 @@ gpg-verify-summary=false
 url=file:///var/lib/flatpak-external-apps
 EOF
 
-if [[ $(blkid -t LABEL=extra) ]]; then
+if [ -e /dev/disk/by-label/extra ]; then
     # Split disk image
     # Create the flatpak directory and repo on the secondary storage
     mkdir -p /var/endless-extra/flatpak
