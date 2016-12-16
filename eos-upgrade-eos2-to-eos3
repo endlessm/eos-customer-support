@@ -88,6 +88,12 @@ if ! $FORCE; then
     echo "which may take a long time and incur data charges depending on your"
     echo "internet connection and contract with your provider."
     echo
+    read -p "Do you want to continue? [y/N] "
+    response=${REPLY,,} # to lower
+    if [[ ! $response =~ ^(yes|y)$ ]]; then
+        exit 1
+    fi
+    echo
     echo "In the meantime, while downloading Endless OS 3, you may continue"
     echo "to use Endless OS 2 and some of the core applications such as"
     echo "the internet browser and office applications."
@@ -104,6 +110,7 @@ if ! $FORCE; then
     if [[ ! $response =~ ^(yes|y)$ ]]; then
         exit 1
     fi
+    echo
 fi
 
 # Stop any updates in progress, and prevent the timer from restarting them
