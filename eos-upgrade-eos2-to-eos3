@@ -266,11 +266,6 @@ url=https://ostree.endlessm.com/ostree/eos-$arch
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
-
-[remote "eos-external-apps"]
-gpg-verify=false
-gpg-verify-summary=false
-url=file:///var/lib/flatpak-external-apps
 EOF
 
 if [ -e /dev/disk/by-label/extra ]; then
@@ -295,11 +290,6 @@ url=https://ostree.endlessm.com/ostree/eos-$arch
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
-
-[remote "eos-external-apps"]
-gpg-verify=false
-gpg-verify-summary=false
-url=file:///var/lib/flatpak-external-apps
 EOF
 fi
 
