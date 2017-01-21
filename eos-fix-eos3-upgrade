@@ -1,0 +1,50 @@
+#!/bin/bash -e
+
+# Fix previous upgrade from eos2 to eos3
+
+# With eos3.1.0, there is a bug that causes flatpak
+# (and thus gnome-software) to crash when encountering
+# an empty flatpak directory.
+#
+# This bug will be fixed in eos3.1.1, but in the meantime
+# users can run this script to get the app center working again.
+#
+# In the upgrade script, we had specified a local "remote"
+# repo for "eos-external-apps", which started empty and
+# would be used with eos3.0 for installing "external"
+# flatpaks such as Spotify, Dropbox, Skype, and Chrome.
+#
+# With eos3.1 we have switched to a new upstream implementation
+# of "external" flatpaks that does not require this local "remote",
+# so we can simply remove it from the repo config file
+# to avoid the crash.
+
+USERID=$(id -u)
+if [ "$USERID" != "0" ]; then
+    echo "Program requires superuser privileges"
+    exit 1
+fi
+
+version=`grep VERSION= /etc/os-release | awk -F '"' '{print $2}'`
+major_version=`echo ${version} | awk -F '.' '{print $1}'`
+
+if [ ${major_version} != 3 ]; then
+    echo "You are running an unsupported version: ${version}"
+    exit 1
+fi
+
+# The lines to remove look like the following:
+#   [remote "eos-external-apps"]
+#   gpg-verify=false
+#   gpg-verify-summary=false
+#   url=file:///var/lib/flatpak-external-apps
+# So, we match the first line and remove it plus the three following
+
+# Modify the ostree and flatpak repo config
+sed -ie '/\[remote \"eos-external-apps\"\]/,+3d' /ostree/repo/config
+
+if [ -e /dev/disk/by-label/extra ]; then
+    # Split disk image
+    # Modify the config file on the secondary storage
+    sed -ie '/\[remote \"eos-external-apps\"\]/,+3d' /var/endless-extra/flatpak/repo/config
+fi
