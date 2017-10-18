@@ -167,8 +167,8 @@ rm -f /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/VERSION.txt
 # we can get a complete list of printers regardless of their status
 # as well as to ensure that the configuration files handled by CUPS
 # e.g. /etc/cups/printers.conf) are correctly updated on restart.
-systemctl stop cups 2> /dev/null
-printers=$(lpstat -p 2> /dev/null | grep ^printer | cut -d ' ' -f 2)
+systemctl stop cups
+printers=$(lpstat -p | grep ^printer | cut -d ' ' -f 2)
 if [ -n "$printers" ]; then
     echo "Cancelling all pending printing jobs..."
     cancel -a -x
@@ -180,7 +180,7 @@ if [ -n "$printers" ]; then
 else
     echo "No printers found"
 fi
-systemctl start cups 2> /dev/null
+systemctl start cups
 
 # Remove drivers downloaded from OpenPrinting, if any, along with
 # the symlinks created under /var/lib/eos-config-printer/ppd.
@@ -226,7 +226,7 @@ if [ -d $ecp_ppd_dir ] && [ -n "$(ls $ecp_ppd_dir 2> /dev/null)" ]; then
 
     # Restart CUPS after removing the drivers to make sure it
     # picks up the changes and reflects them in the PPD database.
-    systemctl restart cups 2> /dev/null
+    systemctl restart cups
 fi
 
 # Figure out the architecture / product
