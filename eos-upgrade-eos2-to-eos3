@@ -167,6 +167,12 @@ rm -f /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/VERSION.txt
 # we can get a complete list of printers regardless of their status
 # as well as to ensure that the configuration files handled by CUPS
 # e.g. /etc/cups/printers.conf) are correctly updated on restart.
+#
+# Last, we need to manually stop the cups.socket and cups.path units
+# first to prevent a bug that would make the 'stop cups' command to
+# fail in certain scenarios, still present in the version on CUPS
+# we have in 2.6.x (1.7.5). See https://github.com/apple/cups/issues/4935
+systemctl stop cups.socket cups.path
 systemctl stop cups
 printers=$(lpstat -p | grep ^printer | cut -d ' ' -f 2)
 if [ -n "$printers" ]; then
@@ -181,6 +187,7 @@ else
     echo "No printers found"
 fi
 systemctl start cups
+systemctl start cups.socket cups.path
 
 # Remove drivers downloaded from OpenPrinting, if any, along with
 # the symlinks created under /var/lib/eos-config-printer/ppd.
