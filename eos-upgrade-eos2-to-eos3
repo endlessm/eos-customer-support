@@ -315,6 +315,11 @@ refspec=eos:os/eos/$prod/eos3
 EOF
 
 if ! $SKIP; then
+    # Pull eos3 ostree without static deltas in case this system is
+    # already suffering missing ostree objects.
+    ostree pull --repo=/ostree/repo --disable-static-deltas eos \
+           os/eos/$prod/eos3
+
     # Perform the ostree upgrade
     # Note that if there has not been an eos3 release since
     # the latest eos2 release, this chronologically will appear
