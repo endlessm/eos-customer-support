@@ -161,19 +161,9 @@ rm -rf /home/*/.local/share/com.endlessm.subscriptions
 rm -f /var/lib/chromium-plugins-extra/eos-chrome-plugin-updater/VERSION.txt
 
 # Remove all the installed printers to force users reconfigure them
-# against the 64bit drivers that available in the updated system.
-#
-# Note that we need to stop CUPS before removing anything, so that
-# we can get a complete list of printers regardless of their status
-# as well as to ensure that the configuration files handled by CUPS
-# e.g. /etc/cups/printers.conf) are correctly updated on restart.
-#
-# Last, we need to manually stop the cups.socket and cups.path units
-# first to prevent a bug that would make the 'stop cups' command to
-# fail in certain scenarios, still present in the version on CUPS
-# we have in 2.6.x (1.7.5). See https://github.com/apple/cups/issues/4935
-systemctl stop cups.socket cups.path
-systemctl stop cups
+# against the 64bit drivers that available in the updated system,
+# but restart CUPS first to make sure everything is up-to-date first.
+systemctl restart cups
 printers=$(lpstat -p | grep ^printer | cut -d ' ' -f 2)
 if [ -n "$printers" ]; then
     echo "Cancelling all pending printing jobs..."
@@ -186,8 +176,10 @@ if [ -n "$printers" ]; then
 else
     echo "No printers found"
 fi
-systemctl start cups
-systemctl start cups.socket cups.path
+
+# Restart CUPS to make extra sure that things got updated before
+# starting to remove the printer drivers below.
+systemctl restart cups
 
 # Remove drivers downloaded from OpenPrinting, if any, along with
 # the symlinks created under /var/lib/eos-config-printer/ppd.
