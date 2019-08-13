@@ -260,12 +260,14 @@ xa.disable=true
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-$arch
+xa.title=Endless OS and Runtimes
 
 [remote "eos-apps"]
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
 xa.default-branch=eos3
+xa.title=Endless Applications
 EOF
 
 if [ -e /dev/disk/by-label/extra ]; then
@@ -285,12 +287,14 @@ mode=bare-user
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-$arch
+xa.title=Endless OS and Runtimes
 
 [remote "eos-apps"]
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
 xa.default-branch=eos3
+xa.title=Endless Applications
 EOF
 fi
 
