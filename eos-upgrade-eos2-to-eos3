@@ -265,6 +265,7 @@ url=https://ostree.endlessm.com/ostree/eos-$arch
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
+xa.default-branch=eos3
 EOF
 
 if [ -e /dev/disk/by-label/extra ]; then
@@ -289,15 +290,9 @@ url=https://ostree.endlessm.com/ostree/eos-$arch
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
+xa.default-branch=eos3
 EOF
 fi
-
-# Set the default branch for the flatpak repo
-mkdir -p /etc/gnome-software
-cat <<EOF > /etc/gnome-software/flatpak-extra.conf
-[remote:eos-apps]
-default-branch=eos3
-EOF
 
 # Change the refspec for the currently deployed ostree
 deployment=`ostree admin status | grep '* eos' | awk -F ' ' '{print $3}'`
