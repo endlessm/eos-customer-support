@@ -306,6 +306,15 @@ refspec=eos:os/eos/$prod/eos3
 EOF
 
 if ! $SKIP; then
+    # Add updated keys for verifying OS updates, as the one included in OS 2.6
+    # expired in 2019. For a period, OS 3.6 updates were signed with the
+    # (later-expiring) Flatpak key which pre-dates OS 2.6, so we also include it.
+    for key in \
+      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EOSK1.pub \
+      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EFSK1.pub; do
+      wget -nv -O - ${key} | ostree remote gpg-import --stdin eos
+    done
+
     # Pull eos3 ostree without static deltas in case this system is
     # already suffering missing ostree objects.
     ostree pull --repo=/ostree/repo --disable-static-deltas eos \
