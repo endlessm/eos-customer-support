@@ -318,26 +318,6 @@ if ! $SKIP; then
     # to ostree as a "downgrade", so we should explicitly allow it
     ostree admin upgrade --allow-downgrade
 
-    # Set up a service that installs the EknServices flatpak
-    # upon rebooting into the eos3 deployment and then deletes itself
-    # After completing the ostree upgrade, there are two deployments:
-    # the current one starts with '* eos ', and we want the new one
-    # that is not yet deployed that starts with '  eos '
-    new_deployment_id=`ostree admin status | grep '  eos ' | awk '{print $2}'`
-    new_deployment=/ostree/deploy/eos/deploy/$new_deployment_id
-    mkdir -p $new_deployment/etc/systemd/system/multi-user.target.wants
-    cat <<EOF > $new_deployment/etc/systemd/system/finish-eos3-upgrade.service
-[Unit]
-Description=Finish upgrade to eos3
-Wants=NetworkManager-wait-online.service
-After=NetworkManager-wait-online.service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/sh -c "flatpak install eos-apps com.endlessm.EknServices eos3 && rm /etc/systemd/system/multi-user.target.wants/finish-eos3-upgrade.service && rm /etc/systemd/system/finish-eos3-upgrade.service && systemctl daemon-reload"
-EOF
-    ln -srf $new_deployment/etc/systemd/system/finish-eos3-upgrade.service $new_deployment/etc/systemd/system/multi-user.target.wants
-
     # All done
     echo "Upgrade complete! Please reboot the computer to start using Endless OS 3"
 fi
