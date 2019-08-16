@@ -24,6 +24,21 @@ Options:
 EOF
 }
 
+update_keys() {
+    echo "Updating OS update signing keys..."
+
+    # Add updated keys for verifying OS updates, as the one included in OS 2.6
+    # expired in 2019. For a period, OS 3.6 updates were signed with the
+    # (later-expiring) Flatpak key which pre-dates OS 2.6, so we also include it.
+    for key in \
+      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EOSK1.pub \
+      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EFSK1.pub; do
+      wget -nv -O - ${key} | ostree remote gpg-import --stdin eos
+    done
+
+    echo
+}
+
 FORCE=false
 SKIP=false
 while true; do
@@ -60,6 +75,8 @@ major_version=`echo ${version} | awk -F '.' '{print $1}'`
 if [ ${version} != ${LATEST_VERSION} ]; then
     echo "This script only works with Endless OS version ${LATEST_VERSION}"
     if [ ${major_version} == 2 ]; then
+        update_keys
+        systemctl restart eos-updater
         echo "Please update the OS and try again"
     elif [ ${major_version} == 3 ]; then
         echo "You already are running Endless OS version 3"
@@ -306,14 +323,7 @@ refspec=eos:os/eos/$prod/eos3
 EOF
 
 if ! $SKIP; then
-    # Add updated keys for verifying OS updates, as the one included in OS 2.6
-    # expired in 2019. For a period, OS 3.6 updates were signed with the
-    # (later-expiring) Flatpak key which pre-dates OS 2.6, so we also include it.
-    for key in \
-      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EOSK1.pub \
-      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EFSK1.pub; do
-      wget -nv -O - ${key} | ostree remote gpg-import --stdin eos
-    done
+    update_keys
 
     # Pull eos3 ostree without static deltas in case this system is
     # already suffering missing ostree objects.
