@@ -24,6 +24,21 @@ Options:
 EOF
 }
 
+update_keys() {
+    echo "Updating OS update signing keys..."
+
+    # Add updated keys for verifying OS updates, as the one included in OS 2.6
+    # expired in 2019. For a period, OS 3.6 updates were signed with the
+    # (later-expiring) Flatpak key which pre-dates OS 2.6, so we also include it.
+    for key in \
+      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EOSK1.pub \
+      https://raw.githubusercontent.com/endlessm/eos-keyring/master/keys/signing/EFSK1.pub; do
+      wget -nv -O - ${key} | ostree remote gpg-import --stdin eos
+    done
+
+    echo
+}
+
 FORCE=false
 SKIP=false
 while true; do
@@ -60,6 +75,8 @@ major_version=`echo ${version} | awk -F '.' '{print $1}'`
 if [ ${version} != ${LATEST_VERSION} ]; then
     echo "This script only works with Endless OS version ${LATEST_VERSION}"
     if [ ${major_version} == 2 ]; then
+        update_keys
+        systemctl restart eos-updater
         echo "Please update the OS and try again"
     elif [ ${major_version} == 3 ]; then
         echo "You already are running Endless OS version 3"
@@ -260,11 +277,14 @@ xa.disable=true
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-$arch
+xa.title=Endless OS and Runtimes
 
 [remote "eos-apps"]
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
+xa.default-branch=eos3
+xa.title=Endless Applications
 EOF
 
 if [ -e /dev/disk/by-label/extra ]; then
@@ -284,20 +304,16 @@ mode=bare-user
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-$arch
+xa.title=Endless OS and Runtimes
 
 [remote "eos-apps"]
 gpg-verify=true
 gpg-verify-summary=true
 url=https://ostree.endlessm.com/ostree/eos-apps
+xa.default-branch=eos3
+xa.title=Endless Applications
 EOF
 fi
-
-# Set the default branch for the flatpak repo
-mkdir -p /etc/gnome-software
-cat <<EOF > /etc/gnome-software/flatpak-extra.conf
-[remote:eos-apps]
-default-branch=eos3
-EOF
 
 # Change the refspec for the currently deployed ostree
 deployment=`ostree admin status | grep '* eos' | awk -F ' ' '{print $3}'`
@@ -307,6 +323,8 @@ refspec=eos:os/eos/$prod/eos3
 EOF
 
 if ! $SKIP; then
+    update_keys
+
     # Pull eos3 ostree without static deltas in case this system is
     # already suffering missing ostree objects.
     ostree pull --repo=/ostree/repo --disable-static-deltas eos \
@@ -317,26 +335,6 @@ if ! $SKIP; then
     # the latest eos2 release, this chronologically will appear
     # to ostree as a "downgrade", so we should explicitly allow it
     ostree admin upgrade --allow-downgrade
-
-    # Set up a service that installs the EknServices flatpak
-    # upon rebooting into the eos3 deployment and then deletes itself
-    # After completing the ostree upgrade, there are two deployments:
-    # the current one starts with '* eos ', and we want the new one
-    # that is not yet deployed that starts with '  eos '
-    new_deployment_id=`ostree admin status | grep '  eos ' | awk '{print $2}'`
-    new_deployment=/ostree/deploy/eos/deploy/$new_deployment_id
-    mkdir -p $new_deployment/etc/systemd/system/multi-user.target.wants
-    cat <<EOF > $new_deployment/etc/systemd/system/finish-eos3-upgrade.service
-[Unit]
-Description=Finish upgrade to eos3
-Wants=NetworkManager-wait-online.service
-After=NetworkManager-wait-online.service
-
-[Service]
-Type=oneshot
-ExecStart=/bin/sh -c "flatpak install eos-apps com.endlessm.EknServices eos3 && rm /etc/systemd/system/multi-user.target.wants/finish-eos3-upgrade.service && rm /etc/systemd/system/finish-eos3-upgrade.service && systemctl daemon-reload"
-EOF
-    ln -srf $new_deployment/etc/systemd/system/finish-eos3-upgrade.service $new_deployment/etc/systemd/system/multi-user.target.wants
 
     # All done
     echo "Upgrade complete! Please reboot the computer to start using Endless OS 3"
